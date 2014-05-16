@@ -1,0 +1,44 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="clr-namespace:TableDataImporter"
+    mc:Ignorable="d" x:Class="TableDataImporter.MainWindow"
+        Title="TableDataImporter" Height="190" Width="525">
+    <Window.Background>
+        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="#FF1E2A63" Offset="0"/>
+            <GradientStop Color="#FF546FEA" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Background>
+    <Window.Resources>
+        <local:EnumMatchToBoolConverter x:Key="EnumCV"/>
+    </Window.Resources>
+    <Grid>
+        <StackPanel Margin="10">
+            <DockPanel Margin="3">
+                <Label Content="テーブル名"/>
+                <TextBox x:Name="テーブル名欄" Text="{Binding テーブル名}" TabIndex="1" TextAlignment="Right" Margin="15,0,0,0"/>
+            </DockPanel>
+            <DockPanel Margin="3">
+                <Label DockPanel.Dock="Left" Content="データファイルのパス"/>
+                <Button x:Name="ファイル指定ボタン" DockPanel.Dock="Right" Click="ファイル指定ボタン_Click" TabIndex="3" Content="指定"/>
+                <TextBox x:Name="データファイルパス欄" Text="{Binding データファイルパス}" TextAlignment="Right" TabIndex="2" Margin="15,0,0,0"/>
+            </DockPanel>
+            <DockPanel Margin="3">
+                <Label DockPanel.Dock="Left" Content="インポートSQLファイル名"/>
+                <Label DockPanel.Dock="Right" Content=".sql"/>
+                <TextBox x:Name="作成ファイル名欄" Text="{Binding 作成ファイル名}" TextAlignment="Right" TabIndex="4" Margin="15,0,0,0"/>
+            </DockPanel>
+            <DockPanel Margin="3">
+                <CheckBox Name="一行目除外チェック" IsChecked="{Binding 一行目除外,Mode=TwoWay}">一行目がヘッダーなので除外する。</CheckBox>
+                <Label Margin="20,0,0,0">区切り文字</Label>
+                <RadioButton Name="タブ区切りON" IsChecked="{Binding Path=区切り文字,Mode=TwoWay,Converter={StaticResource EnumCV},ConverterParameter=タブ}">タブ</RadioButton>
+                <RadioButton Name="コンマ区切りON" IsChecked="{Binding Path=区切り文字,Mode=TwoWay,Converter={StaticResource EnumCV},ConverterParameter=コンマ}">コンマ</RadioButton>
+                <Button x:Name="作成ボタン" HorizontalAlignment="Right" Click="作成ボタン_Click" Content="　作成　"/>
+            </DockPanel>
+            <ProgressBar x:Name="進捗" Height="20"/>
+        </StackPanel>
+    </Grid>
+</Window>
