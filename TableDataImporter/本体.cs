@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Permissions;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace TableDataImporter
@@ -68,44 +69,53 @@ namespace TableDataImporter
             画面.Show();
         }
 
-        void 作成()
+        async void 作成()
         {
             _テーブル名 = 画面.テーブル名;
             _作成ファイル名 = 画面.作成ファイルパス;
             _一行目除外 = 画面.一行目除外;
             _区切り文字 = 画面.区切り文字;
             _データファイルパス = 画面.データファイルパス;
-
-            var separator = (区切り文字 == 区切り.タブ) ? "\t" : ",";
-
             Encoding readEncoding;
+            int 全行数;
             using (var 判定fs = File.OpenRead(データファイルパス))
             {
                 var 先頭 = new byte[4];
                 判定fs.Read(先頭, 0, 4);
                 readEncoding = エンコード判定(先頭);
+                全行数 = File.ReadLines(データファイルパス, readEncoding).Count() - (一行目除外 ? 1 : 0);
             }
-            var source = File.ReadLines(データファイルパス, readEncoding);
+            画面.進捗.Maximum = 全行数;
+            var progress = new Progress<long>(p => 画面.進捗.Value=p);
+            await Task.Run(() => 作成本体(progress, readEncoding, 全行数));
+        }
+
+
+        void 作成本体(IProgress<long> progress, Encoding 文字コード, int 全行数)
+        {
+            var separator = (区切り文字 == 区切り.タブ) ? "\t" : ",";
+
+            var source = File.ReadLines(データファイルパス, 文字コード);
 
             var writeEncoding = Encoding.UTF8; // BOMあり。BOM がないと、SQLCMD が正しく動作しない。
 
             //using (var destination = new StreamWriter(作成ファイル名))
             var 分割数 = 10000;
-            var 全行数 = source.Count() - (一行目除外 ? 1 : 0);
-            画面.進捗.Maximum = 全行数;
+            //var 全行数 = source.Count() - (一行目除外 ? 1 : 0);
+            //画面.進捗.Maximum = 全行数;
             var stream = new FileStream(作成ファイル名.ファイル名に追加((全行数 > 分割数) ? "_001" : ""), FileMode.Create);
             var destination = new StreamWriter(stream, writeEncoding);
-            画面.進捗.Value = 0;
+            progress.Report(0);
             var count = 0;
             try
             {
                 foreach (var line in source.Skip(一行目除外 ? 1 : 0))
                 {
                     count++;
-                    画面.進捗.Value = count;
+                    progress.Report(count);
                     if (count % 分割数 == 1 && 全行数 > 分割数)
                     {
-                        destination.Close();
+                        destination.Dispose();
                         stream.Dispose();
                         stream = new FileStream(作成ファイル名.ファイル名に追加("_" + ((count / 分割数) + 1).ToString("D3")), FileMode.Create);
                         destination = new StreamWriter(stream, writeEncoding);
@@ -116,16 +126,20 @@ namespace TableDataImporter
                     sb.Append(テーブル名).Append(" VALUES('").Append(newline).Append("\');");
                     destination.WriteLine(sb.ToString().Replace("'NULL'", "NULL"));
 
-                    DoEvents();
                 }
-                destination.Close();
+                destination.Dispose();
                 画面.Close();
             }
             catch (Exception ex)
             {
                 try { destination.Close(); }
                 catch { }
-                画面.エラー通知("ファイル作成中にエラーが発生しました。↓\r\n"+ex.ToString());
+                画面.エラー通知("ファイル作成中にエラーが発生しました。↓\r\n" + ex.ToString());
+            }
+            finally
+            {
+                if (destination != null) destination.Dispose();
+                if (stream != null) stream.Dispose();
             }
         }
 
