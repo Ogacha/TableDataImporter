@@ -71,6 +71,7 @@ namespace TableDataImporter
 
         async void 作成()
         {
+            if (画面.データファイルパス == "") return;
             _テーブル名 = 画面.テーブル名;
             _作成ファイル名 = 画面.作成ファイルパス;
             _一行目除外 = 画面.一行目除外;
@@ -88,6 +89,7 @@ namespace TableDataImporter
             画面.進捗.Maximum = 全行数;
             var progress = new Progress<long>(p => 画面.進捗.Value=p);
             await Task.Run(() => 作成本体(progress, readEncoding, 全行数));
+            画面.Close();
         }
 
 
@@ -115,8 +117,8 @@ namespace TableDataImporter
                     progress.Report(count);
                     if (count % 分割数 == 1 && 全行数 > 分割数)
                     {
-                        destination.Dispose();
-                        stream.Dispose();
+                        destination.Close();
+                        stream.Close();
                         stream = new FileStream(作成ファイル名.ファイル名に追加("_" + ((count / 分割数) + 1).ToString("D3")), FileMode.Create);
                         destination = new StreamWriter(stream, writeEncoding);
                     }
@@ -127,19 +129,17 @@ namespace TableDataImporter
                     destination.WriteLine(sb.ToString().Replace("'NULL'", "NULL"));
 
                 }
-                destination.Dispose();
-                画面.Close();
             }
             catch (Exception ex)
             {
-                try { destination.Close(); }
-                catch { }
                 画面.エラー通知("ファイル作成中にエラーが発生しました。↓\r\n" + ex.ToString());
             }
             finally
             {
-                if (destination != null) destination.Dispose();
-                if (stream != null) stream.Dispose();
+                if (destination != null)
+                    try { destination.Close(); }
+                    catch { }
+                if (stream != null) stream.Close();
             }
         }
 

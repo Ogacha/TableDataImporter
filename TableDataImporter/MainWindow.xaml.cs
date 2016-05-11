@@ -69,7 +69,11 @@ namespace TableDataImporter
 
         public string 作成ファイルパス
         {
-            get { return IO::Path.Combine(IO::Path.GetDirectoryName(データファイルパス),作成ファイル名+".sql"); }
+            get
+            {
+                return string.IsNullOrEmpty(データファイルパス) ? "" :
+                    IO::Path.Combine(IO::Path.GetDirectoryName(データファイルパス), 作成ファイル名 + ".sql");
+            }
         }
 
 
